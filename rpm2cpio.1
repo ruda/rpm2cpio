@@ -1,0 +1,13 @@
+.Dd April 1st, 2012
+.Dt RPM2CPIO 1
+.Sh NAME
+.Nm rpm2cpio
+.Nd Extract CPIO archive from RPM package.
+.Sh SYNOPSIS
+.Nm
+.Op filename
+.Sh DESCRIPTION
+.Nm
+converts the RPM on standard input or first parameter to a CPIO archive on standard output.
+.Sh EXAMPLES
+.Dl "rpm2cpioy < adjtimex-1.20-2.1.i386.rpm  | cpio -it"
