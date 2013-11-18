@@ -1,2 +1,11 @@
 Lightweight implementation of rpm2cpio written in Python.
 Extract CPIO archive from RPM package.
+
+rpm2cpio.py < adjtimex-1.20-2.1.i386.rpm  | cpio -it
+./sbin/adjtimex
+./usr/share/doc/adjtimex-1.20
+./usr/share/doc/adjtimex-1.20/COPYING
+./usr/share/doc/adjtimex-1.20/COPYRIGHT
+./usr/share/doc/adjtimex-1.20/README
+./usr/share/man/man8/adjtimex.8.gz
+133 blocks
