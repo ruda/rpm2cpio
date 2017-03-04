@@ -1,0 +1,8 @@
+title: rpm2cpio
+description: Lightweight implementation of rpm2cpio written in Python
+google_analytics: UA-1050966-13
+show_downloads: true
+theme: jekyll-theme-tactile
+
+gems:
+  - jekyll-mentions
