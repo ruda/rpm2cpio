@@ -20,10 +20,16 @@ rpm2cpio < adjtimex-1.20-2.1.i386.rpm  | cpio -it
 133 blocks
 '''
 
+from __future__ import print_function
+
 import sys
-import StringIO
 import gzip
 import subprocess
+
+try:
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 try:
     import lzma
@@ -32,12 +38,12 @@ except ImportError:
 else:
     HAS_LZMA_MODULE = True
 
-RPM_MAGIC = '\xed\xab\xee\xdb'
-GZIP_MAGIC = '\x1f\x8b'
-XZ_MAGIC = '\xfd7zXZ\x00'
+RPM_MAGIC = b'\xed\xab\xee\xdb'
+GZIP_MAGIC = b'\x1f\x8b'
+XZ_MAGIC = b'\xfd7zXZ\x00'
 
 def gzip_decompress(data):
-    gzstream = StringIO.StringIO(data)
+    gzstream = StringIO(data)
     gzipper = gzip.GzipFile(fileobj=gzstream)
     data = gzipper.read()
     return data
@@ -51,11 +57,21 @@ def xz_decompress(data):
     data = unxz.communicate(input=data)[0]
     return data
 
-def rpm2cpio(stream_in=sys.stdin, stream_out=sys.stdout):
-    lead = stream_in.read(96)
+def rpm2cpio(stream_in=None, stream_out=None):
+    if stream_in is None:
+        stream_in = sys.stdin
+    if stream_out is None:
+        stream_out = sys.stdout
+    try:
+        reader = stream_in.buffer
+        writer = stream_out.buffer
+    except AttributeError:
+        reader = stream_in
+        writer = stream_out
+    lead = reader.read(96)
     if lead[0:4] != RPM_MAGIC:
-        raise IOError, 'the input is not a RPM package'
-    data = stream_in.read()
+        raise IOError('the input is not a RPM package')
+    data = reader.read()
     decompress = None
     idx = data.find(XZ_MAGIC)
     if idx != -1:
@@ -66,9 +82,10 @@ def rpm2cpio(stream_in=sys.stdin, stream_out=sys.stdout):
         decompress = gzip_decompress
         pos = idx
     if decompress is None:
-        raise IOError, 'could not find compressed cpio archive'
+        raise IOError('could not find compressed cpio archive')
     data = decompress(data[pos:])
-    stream_out.write(data)
+    writer.write(data)
+
 
 if __name__ == '__main__':
     if sys.argv[1:]:
@@ -76,10 +93,10 @@ if __name__ == '__main__':
             fin = open(sys.argv[1])
             rpm2cpio(fin)
             fin.close()
-        except IOError, e:
-            print 'Error:', sys.argv[1], e
+        except IOError as e:
+            print('Error:', sys.argv[1], e)
     else:
         try:
             rpm2cpio()
-        except IOError, e:
-            print 'Error:', e
+        except IOError as e:
+            print('Error:', e)
