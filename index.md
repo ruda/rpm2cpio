@@ -8,7 +8,7 @@ Quick installation:
 
 Usage:
 
-    $ ./rpm2cpio.py < adjtimex-1.20-2.1.i386.rpm  | cpio -it
+    rpm2cpio.py < adjtimex-1.20-2.1.i386.rpm  | cpio -it
     ./sbin/adjtimex
     ./usr/share/doc/adjtimex-1.20
     ./usr/share/doc/adjtimex-1.20/COPYING
