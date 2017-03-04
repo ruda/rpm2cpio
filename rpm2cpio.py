@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Lightweight RPM to CPIO converter.
-# Copyright © 2008-2013 Rudá Moura
+# Copyright © 2008-2017 Rudá Moura. All rights reserved.
 #
 
 '''Extract cpio archive from RPM package.
@@ -38,9 +38,11 @@ except ImportError:
 else:
     HAS_LZMA_MODULE = True
 
-RPM_MAGIC = b'\xed\xab\xee\xdb'
+
+RPM_MAGIC  = b'\xed\xab\xee\xdb'
 GZIP_MAGIC = b'\x1f\x8b'
-XZ_MAGIC = b'\xfd7zXZ\x00'
+XZ_MAGIC   = b'\xfd7zXZ\x00'
+
 
 def gzip_decompress(data):
     gzstream = StringIO(data)
