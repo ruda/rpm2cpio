@@ -59,20 +59,11 @@ def xz_decompress(data):
     data = unxz.communicate(input=data)[0]
     return data
 
-def rpm2cpio(stream_in=None, stream_out=None):
-    if stream_in is None:
-        stream_in = sys.stdin
-    if stream_out is None:
-        stream_out = sys.stdout
-    try:
-        reader = stream_in.buffer
-        writer = stream_out.buffer
-    except AttributeError:
-        reader = stream_in
-        writer = stream_out
+def is_rpm(reader):
     lead = reader.read(96)
-    if lead[0:4] != RPM_MAGIC:
-        raise IOError('the input is not a RPM package')
+    return lead[0:4] == RPM_MAGIC
+
+def extract_cpio(reader):
     data = reader.read()
     decompress = None
     idx = data.find(XZ_MAGIC)
@@ -84,9 +75,27 @@ def rpm2cpio(stream_in=None, stream_out=None):
         decompress = gzip_decompress
         pos = idx
     if decompress is None:
-        raise IOError('could not find compressed cpio archive')
+        return None
     data = decompress(data[pos:])
-    writer.write(data)
+    return data
+
+def rpm2cpio(stream_in=None, stream_out=None):
+    if stream_in is None:
+        stream_in = sys.stdin
+    if stream_out is None:
+        stream_out = sys.stdout
+    try:
+        reader = stream_in.buffer
+        writer = stream_out.buffer
+    except AttributeError:
+        reader = stream_in
+        writer = stream_out
+    if not is_rpm(reader):
+        raise IOError('the input is not a RPM package')
+    cpio = extract_cpio(reader)
+    if cpio is None:
+        raise IOError('could not find compressed cpio archive')
+    writer.write(cpio)
 
 
 if __name__ == '__main__':
