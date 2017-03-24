@@ -104,14 +104,16 @@ def rpm2cpio(stream_in=None, stream_out=None):
     writer.write(cpio)
 
 
-if __name__ == '__main__':
-    if sys.argv[1:]:
+def main(args=None):
+    if args is None:
+        args = sys.argv
+    if args[1:]:
         try:
-            fin = open(sys.argv[1])
+            fin = open(args[1])
             rpm2cpio(fin)
             fin.close()
         except IOError as e:
-            print('Error:', sys.argv[1], e)
+            print('Error:', args[1], e)
             sys.exit(1)
         except OSError as e:
             print('Error: could not find lzma extractor')
@@ -127,3 +129,10 @@ if __name__ == '__main__':
             print('Error: could not find lzma extractor')
             print("Please install Python's lzma module or the xz utility")
             sys.exit(1)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('Interrupted!')
