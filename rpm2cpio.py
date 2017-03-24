@@ -31,12 +31,14 @@ try:
 except ImportError:
     from io import StringIO
 
+HAS_LZMA_MODULE = True
 try:
     import lzma
 except ImportError:
-    HAS_LZMA_MODULE = False
-else:
-    HAS_LZMA_MODULE = True
+    try:
+        import backports.lzma as lzma
+    except ImportError:
+        HAS_LZMA_MODULE = False
 
 
 RPM_MAGIC  = b'\xed\xab\xee\xdb'
@@ -106,8 +108,18 @@ if __name__ == '__main__':
             fin.close()
         except IOError as e:
             print('Error:', sys.argv[1], e)
+            sys.exit(1)
+        except OSError as e:
+            print('Error: could not find lzma extractor')
+            print("Please, install Python's lzma module or the xz utility")
+            sys.exit(1)
     else:
         try:
             rpm2cpio()
         except IOError as e:
             print('Error:', e)
+            sys.exit(1)
+        except OSError as e:
+            print('Error: could not find lzma extractor')
+            print("Please install Python's lzma module or the xz utility")
+            sys.exit(1)
