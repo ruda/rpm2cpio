@@ -41,9 +41,9 @@ except ImportError:
         HAS_LZMA_MODULE = False
 
 
-RPM_MAGIC  = b'\xed\xab\xee\xdb'
+RPM_MAGIC = b'\xed\xab\xee\xdb'
 GZIP_MAGIC = b'\x1f\x8b'
-XZ_MAGIC   = b'\xfd7zXZ\x00'
+XZ_MAGIC = b'\xfd7zXZ\x00'
 
 
 def gzip_decompress(data):
@@ -51,6 +51,7 @@ def gzip_decompress(data):
     gzipper = gzip.GzipFile(fileobj=gzstream)
     data = gzipper.read()
     return data
+
 
 def xz_decompress(data):
     if HAS_LZMA_MODULE:
@@ -61,9 +62,11 @@ def xz_decompress(data):
     data = unxz.communicate(input=data)[0]
     return data
 
+
 def is_rpm(reader):
     lead = reader.read(96)
     return lead[0:4] == RPM_MAGIC
+
 
 def extract_cpio(reader):
     data = reader.read()
@@ -80,6 +83,7 @@ def extract_cpio(reader):
         return None
     data = decompress(data[pos:])
     return data
+
 
 def rpm2cpio(stream_in=None, stream_out=None):
     if stream_in is None:
