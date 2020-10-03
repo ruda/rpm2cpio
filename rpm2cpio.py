@@ -42,8 +42,6 @@ except ImportError:
 
 
 RPM_MAGIC = b'\xed\xab\xee\xdb'
-GZIP_MAGIC = b'\x1f\x8b'
-XZ_MAGIC = b'\xfd7zXZ\x00'
 
 
 def gzip_decompress(data):
@@ -63,26 +61,98 @@ def xz_decompress(data):
     return data
 
 
+def zstd_decompress(data):
+    unzstd = subprocess.Popen(['unzstd'],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE)
+    data = unzstd.communicate(input=data)[0]
+    return data
+
+
+def bzip2_decompress(data):
+    bunzip2 = subprocess.Popen(['bunzip2'],
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE)
+    data = bunzip2.communicate(input=data)[0]
+    return data
+
+
 def is_rpm(reader):
-    lead = reader.read(96)
-    return lead[0:4] == RPM_MAGIC
+    return reader.read(4) == RPM_MAGIC
+
+
+def b2i(data, order='big'):
+  """
+  Converts bytes to integer
+  """
+  return int.from_bytes(data, order)
+
+
+def b2s(fileobj, encoding='utf-8'):
+  """
+  Reads until \x00
+  """
+  chars = list()
+  while True:
+    c = fileobj.read(1)
+    if c == b'\x00':
+      return "".join(chars)
+    chars.append(c.decode(encoding))
 
 
 def extract_cpio(reader):
-    data = reader.read()
-    decompress = None
-    idx = data.find(XZ_MAGIC)
-    if idx != -1:
-        decompress = xz_decompress
-        pos = idx
-    idx = data.find(GZIP_MAGIC)
-    if idx != -1 and decompress is None:
-        decompress = gzip_decompress
-        pos = idx
-    if decompress is None:
-        return None
-    data = decompress(data[pos:])
-    return data
+    rpm_major, rpm_minor = reader.read(1), reader.read(1)
+    rpm_type = reader.read(2)
+    rpm_arch = reader.read(2)
+    rpm_name = reader.read(66)
+    rpm_os = reader.read(2)
+    rpm_sig_type = reader.read(2)
+    rpm_reserved = reader.read(16)
+    # SIGNATURE
+    rpm_sig_magic = reader.read(3)
+    rpm_sig_version = reader.read(1)
+    rpm_sig_reserved = reader.read(4)
+    rpm_sig_idx_len = reader.read(4)
+    rpm_sig_data_len = reader.read(4)
+    ## Skip signature parsing
+    header_pos = b2i(rpm_sig_idx_len) * 16 + b2i(rpm_sig_data_len) + 96 + 16 + 4
+    reader.seek(header_pos)
+    # HEADER
+    rpm_header_magic = reader.read(3)
+    rpm_header_version = reader.read(1)
+    rpm_header_reserved = reader.read(4)
+    rpm_header_idx_len = reader.read(4)
+    rpm_header_data_len = reader.read(4)
+    rpm_header_data_offset_base = reader.tell() + b2i(rpm_header_idx_len) * 16
+
+    rpm_tag_payloadcompressor = None
+    for tag in range(b2i(rpm_header_idx_len) - 1):
+      tag_id = b2i(reader.read(4))
+      tag_data_type = b2i(reader.read(4))
+      tag_offset = b2i(reader.read(4))
+      tag_data_count = b2i(reader.read(4))
+      if tag_id == 1125:
+        pos_backup = reader.tell()
+        reader.seek(rpm_header_data_offset_base + tag_offset)
+        rpm_tag_payloadcompressor = b2s(reader)
+        reader.seek(pos_backup)
+
+    if rpm_tag_payloadcompressor is None:
+      return None
+
+    reader.seek(rpm_header_data_offset_base + b2i(rpm_header_data_len))
+    compressed_data = reader.read()
+
+    if rpm_tag_payloadcompressor == 'lzma' or rpm_tag_payloadcompressor == 'xz':
+        return xz_decompress(compressed_data)
+    elif rpm_tag_payloadcompressor == 'gzip':
+        return gzip_decompress(compressed_data)
+    elif rpm_tag_payloadcompressor == 'zstd':
+        return zstd_decompress(compressed_data)
+    elif rpm_tag_payloadcompressor == 'bzip2':
+        return bzip2_decompress(compressed_data)
+
+    return None
 
 
 def rpm2cpio(stream_in=None, stream_out=None):
