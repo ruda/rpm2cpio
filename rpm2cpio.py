@@ -137,11 +137,11 @@ def extract_cpio(reader):
         rpm_tag_payloadcompressor = b2s(reader)
         reader.seek(pos_backup)
 
-    if rpm_tag_payloadcompressor is None:
-      return None
-
     reader.seek(rpm_header_data_offset_base + b2i(rpm_header_data_len))
     compressed_data = reader.read()
+
+    if rpm_tag_payloadcompressor is None:
+      return compressed_data  # is actually not compressed
 
     if rpm_tag_payloadcompressor == 'lzma' or rpm_tag_payloadcompressor == 'xz':
         return xz_decompress(compressed_data)
