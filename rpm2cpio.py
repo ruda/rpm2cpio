@@ -54,25 +54,21 @@ def gzip_decompress(data):
 def xz_decompress(data):
     if HAS_LZMA_MODULE:
         return lzma.decompress(data)
-    unxz = subprocess.Popen(['unxz'],
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE)
+    unxz = subprocess.Popen(['unxz'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     data = unxz.communicate(input=data)[0]
     return data
 
 
 def zstd_decompress(data):
-    unzstd = subprocess.Popen(['unzstd'],
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE)
+    unzstd = subprocess.Popen(['unzstd'], stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     data = unzstd.communicate(input=data)[0]
     return data
 
 
 def bzip2_decompress(data):
-    bunzip2 = subprocess.Popen(['bunzip2'],
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE)
+    bunzip2 = subprocess.Popen(
+        ['bunzip2'], stdin=subprocess.PIPE, stdout=subprocess.PIPE
+    )
     data = bunzip2.communicate(input=data)[0]
     return data
 
@@ -82,22 +78,22 @@ def is_rpm(reader):
 
 
 def b2i(data, order='big'):
-  """
-  Converts bytes to integer
-  """
-  return int.from_bytes(data, order)
+    """
+    Converts bytes to integer
+    """
+    return int.from_bytes(data, order)
 
 
 def b2s(fileobj, encoding='utf-8'):
-  """
-  Reads until \x00
-  """
-  chars = list()
-  while True:
-    c = fileobj.read(1)
-    if c == b'\x00':
-      return "".join(chars)
-    chars.append(c.decode(encoding))
+    """
+    Reads until \x00
+    """
+    chars = list()
+    while True:
+        c = fileobj.read(1)
+        if c == b'\x00':
+            return "".join(chars)
+        chars.append(c.decode(encoding))
 
 
 def extract_cpio(reader):
@@ -127,21 +123,21 @@ def extract_cpio(reader):
 
     rpm_tag_payloadcompressor = None
     for tag in range(b2i(rpm_header_idx_len) - 1):
-      tag_id = b2i(reader.read(4))
-      tag_data_type = b2i(reader.read(4))
-      tag_offset = b2i(reader.read(4))
-      tag_data_count = b2i(reader.read(4))
-      if tag_id == 1125:
-        pos_backup = reader.tell()
-        reader.seek(rpm_header_data_offset_base + tag_offset)
-        rpm_tag_payloadcompressor = b2s(reader)
-        reader.seek(pos_backup)
+        tag_id = b2i(reader.read(4))
+        tag_data_type = b2i(reader.read(4))
+        tag_offset = b2i(reader.read(4))
+        tag_data_count = b2i(reader.read(4))
+        if tag_id == 1125:
+            pos_backup = reader.tell()
+            reader.seek(rpm_header_data_offset_base + tag_offset)
+            rpm_tag_payloadcompressor = b2s(reader)
+            reader.seek(pos_backup)
 
     reader.seek(rpm_header_data_offset_base + b2i(rpm_header_data_len))
     compressed_data = reader.read()
 
     if rpm_tag_payloadcompressor is None:
-      return compressed_data  # is actually not compressed
+        return compressed_data  # is actually not compressed
 
     if rpm_tag_payloadcompressor == 'lzma' or rpm_tag_payloadcompressor == 'xz':
         return xz_decompress(compressed_data)
