@@ -16,5 +16,11 @@ uninstall:
 	rm -f $(BINDIR)/rpm2cpio
 	rm -f $(MANDIR)/man1/rpm2pcio.1
 
+lint:
+	flake8 rpm2cpio.py
+
+fmt:
+	black -S rpm2cpio.py
+
 clean:
 	rm -f *~ rpm2cpio *.pyc
